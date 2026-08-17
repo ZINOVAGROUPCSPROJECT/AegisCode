@@ -14,7 +14,6 @@ import {
   Wrench,
   FileText,
   Settings,
-  ShieldCheck,
   LogOut,
   Menu,
   X,
