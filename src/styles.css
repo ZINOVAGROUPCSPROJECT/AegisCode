@@ -17,30 +17,30 @@
     Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --color-ink-950: #050811;
-  --color-ink-900: #0a0f1a;
-  --color-ink-850: #0d1422;
-  --color-ink-800: #111a2e;
-  --color-ink-700: #1a2540;
-  --color-ink-600: #283454;
-  --color-ink-500: #3b4a6b;
-  --color-ink-400: #5a6a8a;
-  --color-ink-300: #8a9ab5;
-  --color-ink-200: #b8c2d4;
-  --color-ink-100: #dde4f0;
-  --color-ink-50: #f2f6fc;
+  --color-ink-950: #05060b;
+  --color-ink-900: #0a0c14;
+  --color-ink-850: #0e1119;
+  --color-ink-800: #131722;
+  --color-ink-700: #1c2130;
+  --color-ink-600: #2a3043;
+  --color-ink-500: #3d4459;
+  --color-ink-400: #5f6780;
+  --color-ink-300: #8f97ad;
+  --color-ink-200: #bcc2d2;
+  --color-ink-100: #e2e6f0;
+  --color-ink-50: #f5f7fc;
 
-  --color-cyber-50: #e6fcff;
-  --color-cyber-100: #c2f4ff;
-  --color-cyber-200: #8de8ff;
-  --color-cyber-300: #4dd9ff;
-  --color-cyber-400: #1cc4f0;
-  --color-cyber-500: #08a9d8;
-  --color-cyber-600: #0889b5;
-  --color-cyber-700: #0b6d91;
-  --color-cyber-800: #0d5773;
-  --color-cyber-900: #0e455c;
-  --color-cyber-950: #062736;
+  --color-cyber-50: #f1f3ff;
+  --color-cyber-100: #e2e6ff;
+  --color-cyber-200: #c8d0ff;
+  --color-cyber-300: #a7b6f8;
+  --color-cyber-400: #8f9ef2;
+  --color-cyber-500: #7b85e8;
+  --color-cyber-600: #6a6cd8;
+  --color-cyber-700: #5754b4;
+  --color-cyber-800: #444291;
+  --color-cyber-900: #363572;
+  --color-cyber-950: #1e1d42;
 
   --color-steel-50: #eef4ff;
   --color-steel-100: #d9e6ff;
@@ -54,17 +54,17 @@
   --color-steel-900: #1a2c78;
   --color-steel-950: #131b4a;
 
-  --color-volt-50: #f3ffe6;
-  --color-volt-100: #e2ffbf;
-  --color-volt-200: #c6ff80;
-  --color-volt-300: #a3f73d;
-  --color-volt-400: #88e617;
-  --color-volt-500: #6bc90a;
-  --color-volt-600: #52a30a;
-  --color-volt-700: #3f7d0f;
-  --color-volt-800: #356312;
-  --color-volt-900: #2d5213;
-  --color-volt-950: #162e08;
+  --color-volt-50: #f6f2ff;
+  --color-volt-100: #ece4ff;
+  --color-volt-200: #dbccff;
+  --color-volt-300: #c2acfb;
+  --color-volt-400: #a98df5;
+  --color-volt-500: #9272ea;
+  --color-volt-600: #7a58d4;
+  --color-volt-700: #6246ad;
+  --color-volt-800: #4d388a;
+  --color-volt-900: #3d2d6d;
+  --color-volt-950: #221741;
 
   --color-success: #16a34a;
   --color-warning: #f59e0b;
@@ -72,9 +72,18 @@
   --color-critical: #dc2626;
   --color-info: #0ea5e9;
 
-  --shadow-glow-cyber: 0 0 0 1px rgba(8, 169, 216, 0.18), 0 0 24px -6px rgba(8, 169, 216, 0.35);
+  --shadow-glow-cyber: 0 0 0 1px rgba(143, 158, 242, 0.2), 0 0 28px -6px rgba(143, 158, 242, 0.4);
   --shadow-glow-danger: 0 0 0 1px rgba(239, 68, 68, 0.18), 0 0 24px -6px rgba(239, 68, 68, 0.35);
-  --shadow-glow-volt: 0 0 0 1px rgba(107, 201, 10, 0.18), 0 0 24px -6px rgba(107, 201, 10, 0.35);
+  --shadow-glow-volt: 0 0 0 1px rgba(169, 141, 245, 0.2), 0 0 28px -6px rgba(169, 141, 245, 0.4);
+
+  --glass-bg: rgba(255, 255, 255, 0.045);
+  --glass-bg-strong: rgba(255, 255, 255, 0.075);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --shadow-neu-raised:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+    -8px -8px 20px rgba(255, 255, 255, 0.025), 10px 12px 28px -10px rgba(0, 0, 0, 0.75);
+  --shadow-neu-pressed:
+    inset 5px 5px 12px rgba(0, 0, 0, 0.6), inset -5px -5px 12px rgba(255, 255, 255, 0.035);
   --shadow-skeu-raised:
     inset 0 1px 0 0 rgba(255, 255, 255, 0.08), inset 0 -1px 0 0 rgba(0, 0, 0, 0.4),
     0 2px 4px rgba(0, 0, 0, 0.3), 0 8px 24px -8px rgba(0, 0, 0, 0.6);
