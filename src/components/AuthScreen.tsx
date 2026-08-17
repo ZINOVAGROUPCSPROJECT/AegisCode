@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import aegisLogo from "@/assets/aegis-logo.png.asset.json";
-import { ShieldCheck, Loader2, AlertCircle, Lock, Mail } from "lucide-react";
+import { Loader2, AlertCircle, Lock, Mail } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui-kit";
 
