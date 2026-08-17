@@ -541,6 +541,20 @@ export function RepoScanPage() {
                 <Panel className="p-5">
                   <p className="stat-label mb-2">AI explanation of engine findings</p>
                   <p className="whitespace-pre-wrap text-xs leading-relaxed text-ink-300">{explanation}</p>
+                  {sources.length > 0 && (
+                    <div className="mt-3 border-t border-ink-700/40 pt-3">
+                      <p className="stat-label mb-1.5">Web sources</p>
+                      <ul className="space-y-1">
+                        {sources.map((s, i) => (
+                          <li key={s.url} className="truncate text-[11px] text-ink-500">
+                            <a href={s.url} target="_blank" rel="noreferrer noopener" className="hover:text-cyber-300">
+                              [{i + 1}] {s.title}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </Panel>
               )}
             </>
