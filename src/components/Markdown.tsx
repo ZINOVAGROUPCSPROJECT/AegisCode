@@ -69,8 +69,8 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
 interface Block {
   type: "p" | "code" | "ul" | "ol" | "h" | "quote";
   lines: string[];
-  level?: number;
-  lang?: string;
+  level?: number | undefined;
+  lang?: string | undefined;
 }
 
 function parseBlocks(source: string): Block[] {
