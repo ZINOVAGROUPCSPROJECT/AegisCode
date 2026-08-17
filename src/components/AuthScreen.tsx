@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { ShieldCheck, Loader2, AlertCircle, Lock, Mail } from "lucide-react";
+import aegisLogo from "@/assets/aegis-logo.png.asset.json";
+import { Loader2, AlertCircle, Lock, Mail } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui-kit";
 
@@ -25,9 +26,11 @@ export function AuthScreen() {
     <div className="min-h-screen flex items-center justify-center bg-grid p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center animate-fade-in">
-          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl border border-cyber-500/30 bg-cyber-500/10 shadow-glow-cyber">
-            <ShieldCheck className="h-8 w-8 text-cyber-400" />
-          </div>
+          <img
+            src={aegisLogo.url}
+            alt="AegisCode logo"
+            className="mb-4 inline-block h-20 w-20 rounded-2xl object-cover shadow-glow-cyber"
+          />
           <h1 className="text-2xl font-bold gradient-text">AegisCode</h1>
           <p className="mt-1.5 text-sm text-ink-400">From Vulnerability Detection to Exploitability Proof</p>
         </div>

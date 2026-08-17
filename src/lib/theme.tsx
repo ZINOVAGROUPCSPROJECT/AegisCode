@@ -35,9 +35,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } catch {
       stored = null;
     }
-    const prefersLight =
-      typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: light)").matches;
-    const initial: ThemeMode = stored === "light" || stored === "dark" ? stored : prefersLight ? "light" : "dark";
+    // Dark is the product default; the system preference no longer flips it.
+    const initial: ThemeMode = stored === "light" || stored === "dark" ? stored : "dark";
     setThemeState(initial);
     applyTheme(initial);
   }, []);
