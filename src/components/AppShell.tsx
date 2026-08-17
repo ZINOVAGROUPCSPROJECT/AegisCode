@@ -106,7 +106,7 @@ export function AppShell({
     <div className="flex h-full flex-col bg-brushed-metal">
       <div className="flex items-center gap-2.5 px-5 py-5">
         <img
-          src={aegisLogo.url}
+          src="/icon-512.png"
           alt="AegisCode logo"
           className="h-10 w-10 rounded-xl object-cover skeu-bezel"
         />
