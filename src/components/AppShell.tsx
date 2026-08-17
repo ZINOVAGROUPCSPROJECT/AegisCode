@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import aegisLogo from "@/assets/aegis-logo.png.asset.json";
 import {
   LayoutDashboard,
   ScanSearch,
