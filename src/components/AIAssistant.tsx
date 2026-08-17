@@ -31,6 +31,8 @@ import {
   loadMessages,
 } from "@/lib/chat-history";
 import { classNames } from "@/lib/utils";
+import { Markdown } from "@/components/Markdown";
+import { useAuth } from "@/lib/auth";
 import type { PageId } from "@/components/AppShell";
 
 interface ChatMessage {
@@ -96,6 +98,7 @@ export function AIAssistant({
   currentPage: PageId;
   onNavigate: (page: PageId) => void;
 }) {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [input, setInput] = useState("");
@@ -112,13 +115,18 @@ export function AIAssistant({
   // so it survives reloads, navigation and cleared browser storage.
   useEffect(() => {
     let cancelled = false;
+    if (!user) {
+      setSessionId(null);
+      setMessages([]);
+      return;
+    }
     (async () => {
       try {
         const id = await getOrCreateSession();
         if (cancelled || !id) return;
         setSessionId(id);
         const history = await loadMessages(id);
-        if (!cancelled) setMessages(history);
+        if (!cancelled && history.length > 0) setMessages(history);
       } catch {
         /* history is best-effort; the assistant must stay usable */
       }
@@ -126,7 +134,7 @@ export function AIAssistant({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -197,8 +205,15 @@ export function AIAssistant({
     setError(null);
 
     try {
-      if (sessionId) {
-        await appendMessage(sessionId, userMessage, currentPage).catch(() => undefined);
+      // The session may not have resolved yet on first send — create it now so
+      // no message is ever lost from history.
+      let activeSession = sessionId;
+      if (!activeSession) {
+        activeSession = await getOrCreateSession().catch(() => null);
+        if (activeSession) setSessionId(activeSession);
+      }
+      if (activeSession) {
+        await appendMessage(activeSession, userMessage, currentPage).catch(() => undefined);
       }
       // Web research only runs when the user explicitly enables it.
       let webBlock = "";
@@ -241,8 +256,8 @@ export function AIAssistant({
         content: typeof response === "string" ? response : JSON.stringify(response, null, 2),
       };
       setMessages([...newMessages, assistantMessage]);
-      if (sessionId) {
-        await appendMessage(sessionId, assistantMessage, currentPage).catch(() => undefined);
+      if (activeSession) {
+        await appendMessage(activeSession, assistantMessage, currentPage).catch(() => undefined);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to get a response. Please try again.");
@@ -372,7 +387,11 @@ export function AIAssistant({
                     : "skeu-bezel text-ink-200"
                 )}
               >
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                {msg.role === "assistant" ? (
+                  <Markdown content={msg.content} />
+                ) : (
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                )}
               </div>
             </div>
           ))}
