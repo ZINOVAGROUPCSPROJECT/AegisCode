@@ -27,7 +27,7 @@ export function AuthScreen() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center animate-fade-in">
           <img
-            src={aegisLogo.url}
+            src="/icon-512.png"
             alt="AegisCode logo"
             className="mb-4 inline-block h-20 w-20 rounded-2xl object-cover shadow-glow-cyber"
           />
