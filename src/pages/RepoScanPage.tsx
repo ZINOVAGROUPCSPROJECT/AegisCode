@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/db";
 import { ai } from "@/lib/ai";
+import { researchWeb } from "@/lib/web-research";
 import { scanRepositoryFn } from "@/lib/scanner.functions";
 import { diffScans, gateDecision, findingsDigest, type SastFinding, type SastSeverity } from "@/lib/engines/sast";
 import {
@@ -73,6 +74,8 @@ export function RepoScanPage() {
   const [explaining, setExplaining] = useState(false);
   const [explanation, setExplanation] = useState<string | null>(null);
   const [ruleFilter, setRuleFilter] = useState("all");
+  const [webSearch, setWebSearch] = useState(false);
+  const [sources, setSources] = useState<{ title: string; url: string }[]>([]);
 
   const load = async () => {
     const [{ data: r }, { data: s }] = await Promise.all([
@@ -180,11 +183,32 @@ export function RepoScanPage() {
     if (!active) return;
     setExplaining(true);
     setExplanation(null);
+    setSources([]);
     try {
+      // Optional live web context (CVE advisories, exploit write-ups, fixes).
+      let webBlock = "";
+      if (webSearch) {
+        try {
+          const rules = [...new Set(active.findings.map((f) => f.ruleId))].slice(0, 6).join(", ");
+          const research = await researchWeb({
+            query: `secure fix and exploitation risk for ${rules || "common web application vulnerabilities"}`,
+            limit: 5,
+          });
+          setSources(research.sources.map((s) => ({ title: s.title, url: s.url })));
+          if (research.context) {
+            webBlock = `Live web research (cite with [n] and the URL where you use it):\n${research.context}\n\n`;
+          }
+        } catch (researchError) {
+          setError(
+            `Web research unavailable: ${researchError instanceof Error ? researchError.message : "unknown error"}. Explaining without it.`,
+          );
+        }
+      }
+
       const res = await ai.chat([
         {
           role: "user",
-          content: `A deterministic SAST engine scanned ${active.repo_label} (commit ${active.commit_sha?.slice(0, 8)}) and produced these rule-based findings. Explain, for an engineer, what they mean, which ones to fix first and why. Reference the exact file:line for each. Do not invent findings that are not listed.\n\n${findingsDigest(
+          content: `${webBlock}A deterministic SAST engine scanned ${active.repo_label} (commit ${active.commit_sha?.slice(0, 8)}) and produced these rule-based findings. Explain, for an engineer, what they mean, which ones to fix first and why, and give a concrete secure fix for each. Reference the exact file:line for each. Do not invent findings that are not listed.\n\n${findingsDigest(
             active.findings,
           )}`,
         },
@@ -263,6 +287,11 @@ export function RepoScanPage() {
                 checked={monitor}
                 onChange={setMonitor}
                 label="Continuously monitor this repository"
+              />
+              <Toggle
+                checked={webSearch}
+                onChange={setWebSearch}
+                label="Use web research in AI explanations"
               />
             </div>
             <Button
@@ -512,6 +541,20 @@ export function RepoScanPage() {
                 <Panel className="p-5">
                   <p className="stat-label mb-2">AI explanation of engine findings</p>
                   <p className="whitespace-pre-wrap text-xs leading-relaxed text-ink-300">{explanation}</p>
+                  {sources.length > 0 && (
+                    <div className="mt-3 border-t border-ink-700/40 pt-3">
+                      <p className="stat-label mb-1.5">Web sources</p>
+                      <ul className="space-y-1">
+                        {sources.map((s, i) => (
+                          <li key={s.url} className="truncate text-[11px] text-ink-500">
+                            <a href={s.url} target="_blank" rel="noreferrer noopener" className="hover:text-cyber-300">
+                              [{i + 1}] {s.title}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </Panel>
               )}
             </>
