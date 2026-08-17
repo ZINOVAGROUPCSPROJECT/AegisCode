@@ -105,9 +105,11 @@ export function AppShell({
   const sidebar = (
     <div className="flex h-full flex-col bg-brushed-metal">
       <div className="flex items-center gap-2.5 px-5 py-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg skeu-bezel">
-          <ShieldCheck className="h-5 w-5 text-cyber-400" />
-        </div>
+        <img
+          src={aegisLogo.url}
+          alt="AegisCode logo"
+          className="h-10 w-10 rounded-xl object-cover skeu-bezel"
+        />
         <div>
           <p className="text-sm font-bold text-ink-100 tracking-wide">AegisCode</p>
           <p className="text-[10px] text-ink-500 uppercase tracking-wider">Security Platform</p>
