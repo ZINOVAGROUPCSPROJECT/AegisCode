@@ -19,8 +19,10 @@ import {
   Loader2,
   AlertCircle,
   ChevronRight,
+  Search,
 } from "lucide-react";
 import { ai } from "@/lib/ai";
+import { researchWeb } from "@/lib/web-research";
 import { supabase } from "@/lib/db";
 import {
   appendMessage,
@@ -34,6 +36,11 @@ import type { PageId } from "@/components/AppShell";
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+}
+
+interface WebSource {
+  title: string;
+  url: string;
 }
 
 interface QuickAction {
@@ -95,6 +102,9 @@ export function AIAssistant({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [contextData, setContextData] = useState<string>("");
+  const [webSearch, setWebSearch] = useState(false);
+  const [sources, setSources] = useState<WebSource[]>([]);
+  const [researching, setResearching] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -190,11 +200,40 @@ export function AIAssistant({
       if (sessionId) {
         await appendMessage(sessionId, userMessage, currentPage).catch(() => undefined);
       }
+      // Web research only runs when the user explicitly enables it.
+      let webBlock = "";
+      if (webSearch) {
+        setResearching(true);
+        try {
+          const research = await researchWeb({ query: userMessage.content, limit: 5 });
+          setSources(research.sources.map((s) => ({ title: s.title, url: s.url })));
+          if (research.context) {
+            webBlock = `Live web research results (cite them as [n] with their URL, ignore anything irrelevant):\n${research.context}\n\n`;
+          }
+        } catch (researchError) {
+          setError(
+            `Web search unavailable: ${researchError instanceof Error ? researchError.message : "unknown error"}. Answering without it.`,
+          );
+          setSources([]);
+        } finally {
+          setResearching(false);
+        }
+      } else {
+        setSources([]);
+      }
+
       const contextPrefix = `Current page: ${currentPage} — ${PAGE_CONTEXT[currentPage]}\n${contextData ? `Relevant data from this page:\n${contextData}\n` : ""}User question: `;
       const messagesWithContext = newMessages.map((m, i) => ({
         role: m.role,
         content: i === 0 ? contextPrefix + m.content : m.content,
       }));
+      if (webBlock && messagesWithContext.length > 0) {
+        const last = messagesWithContext[messagesWithContext.length - 1]!;
+        messagesWithContext[messagesWithContext.length - 1] = {
+          role: last.role,
+          content: `${webBlock}${last.content}`,
+        };
+      }
 
       const response = await ai.chat(messagesWithContext);
       const assistantMessage: ChatMessage = {
@@ -369,7 +408,11 @@ export function AIAssistant({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about vulnerabilities, exploitability, remediation..."
+              placeholder={
+                webSearch
+                  ? "Ask anything — web search is on…"
+                  : "Ask about vulnerabilities, exploitability, remediation..."
+              }
               rows={1}
               className="flex-1 resize-none rounded-lg border border-ink-700/50 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-400 transition-all duration-150 focus:border-cyber-500/50 focus-visible:outline-none max-h-32"
               style={{
@@ -389,6 +432,35 @@ export function AIAssistant({
               <Send className="h-4 w-4" />
             </button>
           </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setWebSearch((v) => !v)}
+              aria-pressed={webSearch}
+              title="Search the live web with Firecrawl before answering"
+              className={classNames(
+                "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors skeu-bezel",
+                webSearch ? "text-cyber-300" : "text-ink-400 hover:text-ink-200",
+              )}
+            >
+              {researching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+              Web search {webSearch ? "on" : "off"}
+            </button>
+            {sources.length > 0 && (
+              <span className="text-[10px] text-ink-500">{sources.length} sources used</span>
+            )}
+          </div>
+          {webSearch && sources.length > 0 && (
+            <ul className="mt-1.5 space-y-0.5">
+              {sources.slice(0, 5).map((s, i) => (
+                <li key={s.url} className="truncate text-[10px] text-ink-500">
+                  <a href={s.url} target="_blank" rel="noreferrer noopener" className="hover:text-cyber-300">
+                    [{i + 1}] {s.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
           <p className="mt-1.5 text-[10px] text-ink-600 flex items-center gap-1">
             <span className="led text-cyber-500" style={{ width: 5, height: 5 }} />
             Context-aware: sees data from {currentPage.replace(/-/g, " ")} page
