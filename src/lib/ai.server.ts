@@ -506,12 +506,12 @@ function describeGatewayFailure(status: number, bodyText: string): AegisAIError 
   const detail = bodyText.replace(/\s+/g, " ").slice(0, 300);
   if (status === 401 || status === 403) {
     return new AegisAIError(
-      "AegisCode is not authorised to reach the AI gateway. The server-side AI key is missing, expired or revoked.",
+      "AegisCode is not authorised to reach OpenRouter. The server-side OPENROUTER_API_KEY is missing, expired or revoked.",
       status,
     );
   }
   if (status === 402) {
-    return new AegisAIError("AI credits are exhausted for this workspace.", 402);
+    return new AegisAIError("OpenRouter credits are exhausted for this account.", 402);
   }
   if (status === 429) {
     return new AegisAIError("AI rate limit reached. Please wait a moment and try again.", 429, true);
