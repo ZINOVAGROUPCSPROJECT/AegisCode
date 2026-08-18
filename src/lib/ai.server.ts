@@ -597,13 +597,15 @@ export async function runAegisAI(body: AegisRequest): Promise<AegisEnvelope> {
     | undefined;
   let usedModel = targets[0]!.model;
 
-  const payload = JSON.stringify({
-    messages,
-    temperature: body.temperature ?? 0.1,
-    max_tokens: body.maxTokens ?? 9000,
-    // Every action except free-form chat must return a strict JSON document.
-    ...(body.action === "chat" ? {} : { response_format: { type: "json_object" } }),
-  });
+  const buildPayload = (model: string) =>
+    JSON.stringify({
+      model,
+      messages,
+      temperature: body.temperature ?? 0.1,
+      max_tokens: body.maxTokens ?? 9000,
+      // Every action except free-form chat must return a strict JSON document.
+      ...(body.action === "chat" ? {} : { response_format: { type: "json_object" } }),
+    });
 
   outer: for (const target of targets) {
     for (let attempt = 1; attempt <= MAX_ATTEMPTS_PER_MODEL; attempt += 1) {
@@ -612,7 +614,7 @@ export async function runAegisAI(body: AegisRequest): Promise<AegisEnvelope> {
         response = await fetch(target.url, {
           method: "POST",
           headers: target.headers,
-          body: `{"model":${JSON.stringify(target.model)},${payload.slice(1)}`,
+          body: buildPayload(target.model),
         });
       } catch (networkError) {
         lastError = new AegisAIError(
