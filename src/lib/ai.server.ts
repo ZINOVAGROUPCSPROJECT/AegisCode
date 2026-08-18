@@ -99,14 +99,12 @@ Return JSON:
 }
 Never claim 100% safety. Distinguish observed/verified/inferred/unknown. Return ONLY JSON.`,
 
-attack_paths: `You are AegisCode's Attack-Path Engine.
+  attack_paths: `You are AegisCode's Attack-Path Engine.
 
-Reconstruct realistic attack paths from the supplied security findings
-and application context.
+Reconstruct realistic attack chains (entry point -> vulnerability -> attack step -> impact)
+from the supplied findings and application context. Use ONLY the supplied evidence.
 
-Return ONLY valid JSON.
-
-Use EXACTLY this structure:
+Return ONLY valid JSON with EXACTLY this structure:
 
 {
   "paths": [
@@ -115,7 +113,7 @@ Use EXACTLY this structure:
       "name": "string",
       "status": "theoretical"|"reachable"|"validated",
       "confidence": 0,
-      "classification": "observed"|"verified"|"inferred"|"unknown",
+      "classification": "detected"|"inferred"|"validated",
       "entry_point": "string",
       "steps": [
         {
@@ -123,45 +121,49 @@ Use EXACTLY this structure:
           "action": "string",
           "node": "string",
           "node_type": "string",
-          "classification": "observed"|"verified"|"inferred"|"unknown"
+          "classification": "detected"|"inferred"|"validated",
+          "evidence": "string",
+          "mitre": { "id": "Txxxx", "name": "string", "tactic": "string" }
         }
       ],
       "impact": "string",
-      "prerequisites": ["string"]
+      "prerequisites": ["string"],
+      "risk_score": 0,
+      "risk_rationale": "string",
+      "why_this_path": "string",
+      "risk_factors": {
+        "severity": 0, "exploitability": 0, "exposure": 0, "impact": 0, "confidence": 0
+      },
+      "evidence": [
+        { "source": "string", "detail": "string", "classification": "detected"|"inferred"|"validated" }
+      ],
+      "remediation": ["string"],
+      "break_condition": "string",
+      "finding_ids": ["string"]
     }
   ],
   "graph": {
-    "nodes": [
-      {
-        "id": "string",
-        "label": "string",
-        "type": "string"
-      }
-    ],
-    "edges": [
-      {
-        "from": "string",
-        "to": "string",
-        "label": "string"
-      }
-    ]
+    "nodes": [{ "id": "string", "label": "string", "type": "string" }],
+    "edges": [{ "from": "string", "to": "string", "label": "string" }]
   }
 }
 
 STRICT RULES:
-
-- Every name must be a string.
-- Every action must be a string.
-- Every node must be a string.
-- Every node label must be a string.
-- Every impact must be a string.
-- Every prerequisite must be a string.
-- Never put an object where a string is expected.
-- Never return [object Object].
-- Never return Markdown.
-- Never invent unsupported attack nodes.
-- Never invent evidence.
-- Mark uncertain conclusions as inferred or unknown.
+- Every field marked "string" must be a plain string, never an object or array.
+- risk_score is 0-100 and ranks REALISTIC risk: severity, exploitability, exposure,
+  business impact and confidence combined — not severity alone. Sort paths by
+  risk_score descending.
+- risk_factors values are 0-100 sub-scores explaining risk_score.
+- "why_this_path" explains the chain using ONLY the supplied evidence, in 1-3 sentences.
+- classification: "detected" = directly present in the supplied data,
+  "inferred" = correlation/AI reasoning, "validated" = proven by supplied verification
+  evidence. Never label an inference as detected or validated.
+- mitre: include ONLY when the step clearly matches a real MITRE ATT&CK technique;
+  otherwise omit the field entirely. Never invent technique IDs.
+- "remediation" is 1-4 concise, concrete actions. "break_condition" states what would
+  make this path no longer viable.
+- finding_ids must reference ids present in the supplied findings.
+- Never invent evidence, findings, endpoints or CVEs. Never return Markdown.
 - Return ONLY JSON.`,
 
   supply_chain: `You are AegisCode's Supply-Chain Security analyzer. Analyze dependencies for risk, poisoning indicators, behavioral fingerprints, and blast radius.
