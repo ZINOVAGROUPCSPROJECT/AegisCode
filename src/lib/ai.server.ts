@@ -39,12 +39,12 @@ export interface AegisRequest {
 }
 
 /**
- * Default model served by the Lovable AI Gateway. The gateway keeps the
- * credential server-side; the browser never sees a provider key.
+ * OpenRouter is the only AI provider. Both models are configurable through
+ * server-side environment variables; the browser never sees a provider key.
  */
-export const AEGIS_MODEL = "google/gemini-3.6-flash";
-export const AEGIS_FALLBACK_MODEL = "openai/gpt-oss-20b:free";
-const OPENROUTER_GATEWAY_URL = "https://openrouter.ai/api/v1/chat/completions";
+export const DEFAULT_MODEL = "google/gemini-2.0-flash-001";
+export const DEFAULT_FALLBACK_MODEL = "openai/gpt-oss-20b:free";
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export const SYSTEM_PROMPTS: Record<AegisAction, string> = {
   analyze_code: `You are AegisCode, an elite application security analyst. Analyze code for vulnerabilities with surgical precision.
@@ -99,14 +99,12 @@ Return JSON:
 }
 Never claim 100% safety. Distinguish observed/verified/inferred/unknown. Return ONLY JSON.`,
 
-attack_paths: `You are AegisCode's Attack-Path Engine.
+  attack_paths: `You are AegisCode's Attack-Path Engine.
 
-Reconstruct realistic attack paths from the supplied security findings
-and application context.
+Reconstruct realistic attack chains (entry point -> vulnerability -> attack step -> impact)
+from the supplied findings and application context. Use ONLY the supplied evidence.
 
-Return ONLY valid JSON.
-
-Use EXACTLY this structure:
+Return ONLY valid JSON with EXACTLY this structure:
 
 {
   "paths": [
@@ -115,7 +113,7 @@ Use EXACTLY this structure:
       "name": "string",
       "status": "theoretical"|"reachable"|"validated",
       "confidence": 0,
-      "classification": "observed"|"verified"|"inferred"|"unknown",
+      "classification": "detected"|"inferred"|"validated",
       "entry_point": "string",
       "steps": [
         {
@@ -123,45 +121,49 @@ Use EXACTLY this structure:
           "action": "string",
           "node": "string",
           "node_type": "string",
-          "classification": "observed"|"verified"|"inferred"|"unknown"
+          "classification": "detected"|"inferred"|"validated",
+          "evidence": "string",
+          "mitre": { "id": "Txxxx", "name": "string", "tactic": "string" }
         }
       ],
       "impact": "string",
-      "prerequisites": ["string"]
+      "prerequisites": ["string"],
+      "risk_score": 0,
+      "risk_rationale": "string",
+      "why_this_path": "string",
+      "risk_factors": {
+        "severity": 0, "exploitability": 0, "exposure": 0, "impact": 0, "confidence": 0
+      },
+      "evidence": [
+        { "source": "string", "detail": "string", "classification": "detected"|"inferred"|"validated" }
+      ],
+      "remediation": ["string"],
+      "break_condition": "string",
+      "finding_ids": ["string"]
     }
   ],
   "graph": {
-    "nodes": [
-      {
-        "id": "string",
-        "label": "string",
-        "type": "string"
-      }
-    ],
-    "edges": [
-      {
-        "from": "string",
-        "to": "string",
-        "label": "string"
-      }
-    ]
+    "nodes": [{ "id": "string", "label": "string", "type": "string" }],
+    "edges": [{ "from": "string", "to": "string", "label": "string" }]
   }
 }
 
 STRICT RULES:
-
-- Every name must be a string.
-- Every action must be a string.
-- Every node must be a string.
-- Every node label must be a string.
-- Every impact must be a string.
-- Every prerequisite must be a string.
-- Never put an object where a string is expected.
-- Never return [object Object].
-- Never return Markdown.
-- Never invent unsupported attack nodes.
-- Never invent evidence.
-- Mark uncertain conclusions as inferred or unknown.
+- Every field marked "string" must be a plain string, never an object or array.
+- risk_score is 0-100 and ranks REALISTIC risk: severity, exploitability, exposure,
+  business impact and confidence combined — not severity alone. Sort paths by
+  risk_score descending.
+- risk_factors values are 0-100 sub-scores explaining risk_score.
+- "why_this_path" explains the chain using ONLY the supplied evidence, in 1-3 sentences.
+- classification: "detected" = directly present in the supplied data,
+  "inferred" = correlation/AI reasoning, "validated" = proven by supplied verification
+  evidence. Never label an inference as detected or validated.
+- mitre: include ONLY when the step clearly matches a real MITRE ATT&CK technique;
+  otherwise omit the field entirely. Never invent technique IDs.
+- "remediation" is 1-4 concise, concrete actions. "break_condition" states what would
+  make this path no longer viable.
+- finding_ids must reference ids present in the supplied findings.
+- Never invent evidence, findings, endpoints or CVEs. Never return Markdown.
 - Return ONLY JSON.`,
 
   supply_chain: `You are AegisCode's Supply-Chain Security analyzer. Analyze dependencies for risk, poisoning indicators, behavioral fingerprints, and blast radius.
@@ -454,7 +456,7 @@ export interface AegisEnvelope {
   usage: unknown;
 }
 
-interface GatewayTarget {
+interface ProviderTarget {
   url: string;
   headers: Record<string, string>;
   model: string;
@@ -462,52 +464,29 @@ interface GatewayTarget {
 }
 
 /**
- * Resolve the provider chain. The managed Lovable AI Gateway is primary: its
- * key is injected server-side, which removes the 401s caused by a missing or
- * browser-exposed provider key. An OpenRouter key, when present, is used as a
- * fallback so self-hosted deployments keep working.
-  */
-function resolveGatewayTargets(): GatewayTarget[] {
+ * OpenRouter-only provider chain: a primary model plus a fallback model, both
+ * configurable via server-side env vars. The key never leaves the server.
+ */
+function resolveProviderTargets(): ProviderTarget[] {
   const openRouterKey = process.env["OPENROUTER_API_KEY"];
-
-  if (!openRouterKey) {
-    return [];
-  }
+  if (!openRouterKey) return [];
 
   const headers = {
     Authorization: `Bearer ${openRouterKey}`,
     "Content-Type": "application/json",
-    "HTTP-Referer": "https://aegiscodecybersecurity.vercel.app",
+    "HTTP-Referer": "https://aegiscode.app",
     "X-Title": "AegisCode",
   };
 
-  return [
-    {
-      name: "openrouter-primary",
-      url: OPENROUTER_GATEWAY_URL,
-      model: AEGIS_MODEL,
-      headers,
-    },
-    {
-      name: "openrouter-fallback",
-      url: OPENROUTER_GATEWAY_URL,
-      model: AEGIS_FALLBACK_MODEL,
-      headers,
-    },
-  ];
-}
-  if (openRouterKey) {
-    targets.push({
-      name: "openrouter",
-      url: OPENROUTER_GATEWAY_URL,
-      model: AEGIS_FALLBACK_MODEL,
-      headers: {
-        Authorization: `Bearer ${openRouterKey}`,
-        "Content-Type": "application/json",
-      },
-    });
-  }
+  const primary = process.env["OPENROUTER_MODEL"] || DEFAULT_MODEL;
+  const fallback = process.env["OPENROUTER_FALLBACK_MODEL"] || DEFAULT_FALLBACK_MODEL;
 
+  const targets: ProviderTarget[] = [
+    { name: "openrouter-primary", url: OPENROUTER_URL, model: primary, headers },
+  ];
+  if (fallback && fallback !== primary) {
+    targets.push({ name: "openrouter-fallback", url: OPENROUTER_URL, model: fallback, headers });
+  }
   return targets;
 }
 
@@ -527,12 +506,12 @@ function describeGatewayFailure(status: number, bodyText: string): AegisAIError 
   const detail = bodyText.replace(/\s+/g, " ").slice(0, 300);
   if (status === 401 || status === 403) {
     return new AegisAIError(
-      "AegisCode is not authorised to reach the AI gateway. The server-side AI key is missing, expired or revoked.",
+      "AegisCode is not authorised to reach OpenRouter. The server-side OPENROUTER_API_KEY is missing, expired or revoked.",
       status,
     );
   }
   if (status === 402) {
-    return new AegisAIError("AI credits are exhausted for this workspace.", 402);
+    return new AegisAIError("OpenRouter credits are exhausted for this account.", 402);
   }
   if (status === 429) {
     return new AegisAIError("AI rate limit reached. Please wait a moment and try again.", 429, true);
@@ -565,11 +544,25 @@ async function readJsonResponse(response: Response): Promise<Record<string, unkn
   }
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Retry-After (seconds or HTTP date) in ms, capped. */
+function retryAfterMs(header: string | null): number | null {
+  if (!header) return null;
+  const seconds = Number(header);
+  if (Number.isFinite(seconds)) return Math.min(Math.max(seconds, 1), 30) * 1000;
+  const date = Date.parse(header);
+  if (!Number.isNaN(date)) return Math.min(Math.max(date - Date.now(), 1000), 30_000);
+  return null;
+}
+
+const MAX_ATTEMPTS_PER_MODEL = 3;
+
 export async function runAegisAI(body: AegisRequest): Promise<AegisEnvelope> {
-  const targets = resolveGatewayTargets();
+  const targets = resolveProviderTargets();
   if (targets.length === 0) {
     throw new AegisAIError(
-      "AI is not configured on this server. Set LOVABLE_API_KEY (or OPENROUTER_API_KEY) in the server environment.",
+      "AI is not configured on this server. Set OPENROUTER_API_KEY in the server environment.",
       500,
     );
   }
@@ -602,81 +595,69 @@ export async function runAegisAI(body: AegisRequest): Promise<AegisEnvelope> {
         choices?: { message?: { content?: string }; finish_reason?: string }[];
       }
     | undefined;
-  let usedModel = AEGIS_MODEL;
+  let usedModel = targets[0]!.model;
 
-  for (const target of targets) {
-    let response: Response;
-    try {
-      response = await fetch(target.url, {
-        method: "POST",
-        headers: target.headers,
-        body: JSON.stringify({
-          model: target.model,
-          messages,
-          temperature: body.temperature ?? 0.1,
-          max_tokens: body.maxTokens ?? 9000,
-          // Every action except free-form chat must return a strict JSON document.
-          ...(body.action === "chat" ? {} : { response_format: { type: "json_object" } }),
-        }),
-      });
-    } catch (networkError) {
-      lastError = new AegisAIError(
-        `Could not reach the AI provider (${target.name}): ${(networkError as Error).message}`,
-        503,
-        true,
-      );
-      continue;
+  const buildPayload = (model: string) =>
+    JSON.stringify({
+      model,
+      messages,
+      temperature: body.temperature ?? 0.1,
+      max_tokens: body.maxTokens ?? 9000,
+      // Every action except free-form chat must return a strict JSON document.
+      ...(body.action === "chat" ? {} : { response_format: { type: "json_object" } }),
+    });
+
+  outer: for (const target of targets) {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS_PER_MODEL; attempt += 1) {
+      let response: Response;
+      try {
+        response = await fetch(target.url, {
+          method: "POST",
+          headers: target.headers,
+          body: buildPayload(target.model),
+        });
+      } catch (networkError) {
+        lastError = new AegisAIError(
+          `Could not reach the AI provider (${target.name}): ${(networkError as Error).message}`,
+          503,
+          true,
+        );
+        break; // network failure — move to the fallback model
+      }
+
+      if (response.ok) {
+        data = (await readJsonResponse(response)) as typeof data;
+        usedModel = target.model;
+        break outer;
+      }
+
+      const responseText = await response.text();
+      lastError = describeGatewayFailure(response.status, responseText);
+
+      // Rate limited: honour Retry-After, otherwise exponential backoff + jitter.
+      if (response.status === 429) {
+        if (attempt === MAX_ATTEMPTS_PER_MODEL) break; // hand over to the fallback model
+        const backoff = retryAfterMs(response.headers.get("retry-after")) ?? 2 ** attempt * 500;
+        await sleep(Math.min(backoff, 30_000) + Math.random() * 400);
+        continue;
+      }
+
+      // Transient upstream failure: one bounded retry, then the fallback model.
+      if (response.status >= 500) {
+        if (attempt === MAX_ATTEMPTS_PER_MODEL) break;
+        await sleep(2 ** attempt * 400 + Math.random() * 300);
+        continue;
+      }
+
+      // Terminal: credits / auth / bad request. Retrying the same key never helps.
+      if (response.status === 402 || response.status === 401 || response.status === 403) {
+        throw lastError;
+      }
+
+      break; // other 4xx — try the fallback model once
     }
-
-    if (!response.ok) {
-  const responseText = await response.text();
-
-  lastError = describeGatewayFailure(
-    response.status,
-    responseText
-  );
-
-  // OpenRouter rate limit:
-  // wait briefly and then try the next configured OpenRouter model.
-  if (response.status === 429) {
-    const retryAfterHeader =
-      response.headers.get("retry-after");
-
-    const retryAfterSeconds = Number(
-      retryAfterHeader || "2"
-    );
-
-    const waitMs =
-      Math.min(
-        Math.max(
-          Number.isFinite(retryAfterSeconds)
-            ? retryAfterSeconds
-            : 2,
-          1
-        ),
-        10
-      ) * 1000;
-
-    await new Promise((resolve) =>
-      setTimeout(resolve, waitMs + Math.random() * 500)
-    );
-
-    continue;
   }
 
-  // Credits exhausted cannot be fixed by retrying.
-  if (response.status === 402) {
-    throw lastError;
-  }
-
-  continue;
-}
-    }
-
-    data = (await readJsonResponse(response)) as typeof data;
-    usedModel = target.model;
-    break;
-  }
 
   if (!data) {
     throw lastError ?? new AegisAIError("The AI request failed.", 502, true);

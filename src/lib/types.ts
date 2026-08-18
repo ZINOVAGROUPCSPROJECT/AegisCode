@@ -47,6 +47,20 @@ export interface AttackPath {
   steps: AttackPathStep[] | string[];
   impact?: string;
   prerequisites?: string[];
+  risk_score?: number;
+  risk_rationale?: string;
+  why_this_path?: string;
+  risk_factors?: {
+    severity?: number;
+    exploitability?: number;
+    exposure?: number;
+    impact?: number;
+    confidence?: number;
+  };
+  evidence?: { source?: string; detail?: string; classification?: string }[];
+  remediation?: string[];
+  break_condition?: string;
+  finding_ids?: string[];
 }
 
 export interface AttackPathStep {
@@ -55,6 +69,8 @@ export interface AttackPathStep {
   node: string;
   node_type?: string;
   classification?: Classification;
+  evidence?: string;
+  mitre?: { id?: string; name?: string; tactic?: string };
 }
 
 export interface DataFlowNode {
