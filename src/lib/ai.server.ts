@@ -44,8 +44,6 @@ export interface AegisRequest {
  */
 export const AEGIS_MODEL = "google/gemini-3.6-flash";
 export const AEGIS_FALLBACK_MODEL = "openai/gpt-oss-20b:free";
-
-const LOVABLE_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const OPENROUTER_GATEWAY_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export const SYSTEM_PROMPTS: Record<AegisAction, string> = {
@@ -101,25 +99,70 @@ Return JSON:
 }
 Never claim 100% safety. Distinguish observed/verified/inferred/unknown. Return ONLY JSON.`,
 
-  attack_paths: `You are AegisCode's Attack-Path Engine. Reconstruct and visualize attack paths from vulnerabilities and application context.
-Return JSON:
+attack_paths: `You are AegisCode's Attack-Path Engine.
+
+Reconstruct realistic attack paths from the supplied security findings
+and application context.
+
+Return ONLY valid JSON.
+
+Use EXACTLY this structure:
+
 {
   "paths": [
     {
-      "id": string,
-      "name": string,
+      "id": "string",
+      "name": "string",
       "status": "theoretical"|"reachable"|"validated",
-      "confidence": number (0-100),
+      "confidence": 0,
       "classification": "observed"|"verified"|"inferred"|"unknown",
-      "entry_point": string,
-      "steps": [{ "order": number, "action": string, "node": string, "node_type": string, "classification": "observed"|"verified"|"inferred"|"unknown" }],
-      "impact": string,
-      "prerequisites": [string]
+      "entry_point": "string",
+      "steps": [
+        {
+          "order": 1,
+          "action": "string",
+          "node": "string",
+          "node_type": "string",
+          "classification": "observed"|"verified"|"inferred"|"unknown"
+        }
+      ],
+      "impact": "string",
+      "prerequisites": ["string"]
     }
   ],
-  "graph": { "nodes": [{ "id": string, "label": string, "type": string }], "edges": [{ "from": string, "to": string, "label": string }] }
+  "graph": {
+    "nodes": [
+      {
+        "id": "string",
+        "label": "string",
+        "type": "string"
+      }
+    ],
+    "edges": [
+      {
+        "from": "string",
+        "to": "string",
+        "label": "string"
+      }
+    ]
+  }
 }
-Never invent nodes that are not supported by the input. Return ONLY JSON.`,
+
+STRICT RULES:
+
+- Every name must be a string.
+- Every action must be a string.
+- Every node must be a string.
+- Every node label must be a string.
+- Every impact must be a string.
+- Every prerequisite must be a string.
+- Never put an object where a string is expected.
+- Never return [object Object].
+- Never return Markdown.
+- Never invent unsupported attack nodes.
+- Never invent evidence.
+- Mark uncertain conclusions as inferred or unknown.
+- Return ONLY JSON.`,
 
   supply_chain: `You are AegisCode's Supply-Chain Security analyzer. Analyze dependencies for risk, poisoning indicators, behavioral fingerprints, and blast radius.
 Return JSON:
@@ -423,24 +466,36 @@ interface GatewayTarget {
  * key is injected server-side, which removes the 401s caused by a missing or
  * browser-exposed provider key. An OpenRouter key, when present, is used as a
  * fallback so self-hosted deployments keep working.
- */
+  */
 function resolveGatewayTargets(): GatewayTarget[] {
-  const targets: GatewayTarget[] = [];
-  const lovableKey = process.env["LOVABLE_API_KEY"];
   const openRouterKey = process.env["OPENROUTER_API_KEY"];
 
-  if (lovableKey) {
-    targets.push({
-      name: "lovable",
-      url: LOVABLE_GATEWAY_URL,
-      model: AEGIS_MODEL,
-      headers: {
-        "Lovable-API-Key": lovableKey,
-        "Content-Type": "application/json",
-      },
-    });
+  if (!openRouterKey) {
+    return [];
   }
 
+  const headers = {
+    Authorization: `Bearer ${openRouterKey}`,
+    "Content-Type": "application/json",
+    "HTTP-Referer": "https://aegiscodecybersecurity.vercel.app",
+    "X-Title": "AegisCode",
+  };
+
+  return [
+    {
+      name: "openrouter-primary",
+      url: OPENROUTER_GATEWAY_URL,
+      model: AEGIS_MODEL,
+      headers,
+    },
+    {
+      name: "openrouter-fallback",
+      url: OPENROUTER_GATEWAY_URL,
+      model: AEGIS_FALLBACK_MODEL,
+      headers,
+    },
+  ];
+}
   if (openRouterKey) {
     targets.push({
       name: "openrouter",
@@ -558,8 +613,8 @@ export async function runAegisAI(body: AegisRequest): Promise<AegisEnvelope> {
         body: JSON.stringify({
           model: target.model,
           messages,
-          temperature: body.temperature ?? 0.2,
-          max_tokens: body.maxTokens ?? 32000,
+          temperature: body.temperature ?? 0.1,
+          max_tokens: body.maxTokens ?? 9000,
           // Every action except free-form chat must return a strict JSON document.
           ...(body.action === "chat" ? {} : { response_format: { type: "json_object" } }),
         }),
@@ -574,10 +629,48 @@ export async function runAegisAI(body: AegisRequest): Promise<AegisEnvelope> {
     }
 
     if (!response.ok) {
-      lastError = describeGatewayFailure(response.status, await response.text());
-      // Auth/config failures on one provider are worth retrying on the next.
-      if (lastError.status === 429 || lastError.status === 402) throw lastError;
-      continue;
+  const responseText = await response.text();
+
+  lastError = describeGatewayFailure(
+    response.status,
+    responseText
+  );
+
+  // OpenRouter rate limit:
+  // wait briefly and then try the next configured OpenRouter model.
+  if (response.status === 429) {
+    const retryAfterHeader =
+      response.headers.get("retry-after");
+
+    const retryAfterSeconds = Number(
+      retryAfterHeader || "2"
+    );
+
+    const waitMs =
+      Math.min(
+        Math.max(
+          Number.isFinite(retryAfterSeconds)
+            ? retryAfterSeconds
+            : 2,
+          1
+        ),
+        10
+      ) * 1000;
+
+    await new Promise((resolve) =>
+      setTimeout(resolve, waitMs + Math.random() * 500)
+    );
+
+    continue;
+  }
+
+  // Credits exhausted cannot be fixed by retrying.
+  if (response.status === 402) {
+    throw lastError;
+  }
+
+  continue;
+}
     }
 
     data = (await readJsonResponse(response)) as typeof data;
