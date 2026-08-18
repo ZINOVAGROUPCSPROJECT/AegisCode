@@ -17,7 +17,7 @@ import type {
 } from "./types";
 
 import type { AegisActionName } from "./ai.contract";
-import type { AttackPath, AttackPathStep, AIAttackPathsResult as _AP } from "./types";
+import type { AttackPath, AttackPathStep } from "./types";
 
 /** Hard caps keep Attack-Path requests fast and token-efficient. */
 export const MAX_ATTACK_PATH_FINDINGS = 50;
@@ -173,8 +173,8 @@ function deriveRiskScore(path: AttackPath): number {
   }
   const statusWeight =
     path.status === "validated" ? 100 : path.status === "reachable" ? 75 : 45;
-  const severity = SEVERITY_WEIGHT[String(path.risk_rationale ?? "").toLowerCase()] ?? 55;
-  return clampScore(statusWeight * 0.6 + severity * 0.4 * confidence, 0);
+  const impactWeight = SEVERITY_WEIGHT[String(path.impact ?? "").toLowerCase()] ?? 55;
+  return clampScore(statusWeight * 0.6 + impactWeight * 0.4 * confidence, 0);
 }
 
 function normalizeAttackPaths(result: AIAttackPathsResult): AIAttackPathsResult {
