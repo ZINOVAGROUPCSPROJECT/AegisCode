@@ -43,9 +43,6 @@ export interface AegisRequest {
  * credential server-side; the browser never sees a provider key.
  */
 export const AEGIS_MODEL = "openai/gpt-oss-20b:free";
-export const AEGIS_FALLBACK_MODEL = "google/gemini-3.6-flash";
-
-const LOVABLE_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const OPENROUTER_GATEWAY_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export const SYSTEM_PROMPTS: Record<AegisAction, string> = {
@@ -426,20 +423,7 @@ interface GatewayTarget {
  */
 function resolveGatewayTargets(): GatewayTarget[] {
   const targets: GatewayTarget[] = [];
-  const lovableKey = process.env["LOVABLE_API_KEY"];
   const openRouterKey = process.env["OPENROUTER_API_KEY"];
-
-  if (lovableKey) {
-    targets.push({
-      name: "lovable",
-      url: LOVABLE_GATEWAY_URL,
-      model: AEGIS_MODEL,
-      headers: {
-        "Lovable-API-Key": lovableKey,
-        "Content-Type": "application/json",
-      },
-    });
-  }
 
   if (openRouterKey) {
     targets.push({
@@ -514,7 +498,7 @@ export async function runAegisAI(body: AegisRequest): Promise<AegisEnvelope> {
   const targets = resolveGatewayTargets();
   if (targets.length === 0) {
     throw new AegisAIError(
-      "AI is not configured on this server. Set LOVABLE_API_KEY (or OPENROUTER_API_KEY) in the server environment.",
+      "AI is not configured on this server. Set OPENROUTER_API_KEY in the server environment.",
       500,
     );
   }
