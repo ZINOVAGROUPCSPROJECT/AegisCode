@@ -96,11 +96,15 @@ export const ai = {
       userContent: `Vulnerability finding:\n${JSON.stringify(finding, null, 2)}\n\nApplication context:\n${appContext}`,
     }),
 
-  generateAttackPaths: (findings: Record<string, unknown>[], appContext: string) =>
-    callAI<AIAttackPathsResult>({
+  generateAttackPaths: async (findings: Record<string, unknown>[], appContext: string) => {
+    const result = await callAI<AIAttackPathsResult>({
       action: "attack_paths",
-      userContent: `Findings:\n${JSON.stringify(findings, null, 2)}\n\nApplication context:\n${appContext}`,
-    }),
+      userContent: `Findings (${Math.min(findings.length, MAX_ATTACK_PATH_FINDINGS)} of ${findings.length}):\n${JSON.stringify(
+        findings.slice(0, MAX_ATTACK_PATH_FINDINGS).map(slimFinding),
+      )}\n\nApplication context:\n${String(appContext ?? "").slice(0, MAX_ATTACK_PATH_CONTEXT)}`,
+    });
+    return normalizeAttackPaths(result);
+  },
 
   analyzeSupplyChain: (manifest: string, appContext: string) =>
     callAI<AISupplyChainResult>({
