@@ -1,11 +1,11 @@
 /**
  * Firecrawl access (server-only).
  *
- * The connection is gateway-backed, so every call is routed through the
- * Lovable connector gateway with credentials that never reach the browser.
+ * Calls go straight to the Firecrawl API with a server-side key. The key is
+ * read inside the request boundary and never reaches the browser.
  */
 
-const GATEWAY = "https://connector-gateway.lovable.dev/firecrawl/v2";
+const FIRECRAWL_V2 = "https://api.firecrawl.dev/v2";
 
 export class FirecrawlError extends Error {
   readonly status: number;
@@ -16,23 +16,34 @@ export class FirecrawlError extends Error {
   }
 }
 
-function headers(): Record<string, string> {
-  const lovableKey = process.env["LOVABLE_API_KEY"];
-  const connectionKey = process.env["FIRECRAWL_API_KEY"];
-  if (!lovableKey || !connectionKey) {
-    throw new FirecrawlError("Web research is not configured on this deployment.", 503);
+function apiKey(): string {
+  const direct = process.env["FIRECRAWL_DIRECT_API_KEY"];
+  const configured = process.env["FIRECRAWL_API_KEY"];
+  const key = direct || (configured?.startsWith("fc-") ? configured : undefined);
+  if (!key) {
+    throw new FirecrawlError(
+      "Web research is not configured on this deployment. Set FIRECRAWL_DIRECT_API_KEY (an fc-… Firecrawl key) on the server.",
+      503,
+    );
   }
+  return key;
+}
+
+function headers(): Record<string, string> {
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${lovableKey}`,
-    "X-Connection-Api-Key": connectionKey,
+    Authorization: `Bearer ${apiKey()}`,
   };
 }
 
 async function call<T>(path: string, body: unknown): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${GATEWAY}${path}`, { method: "POST", headers: headers(), body: JSON.stringify(body) });
+    res = await fetch(`${FIRECRAWL_V2}${path}`, {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify(body),
+    });
   } catch (error) {
     throw new FirecrawlError(
       `Could not reach the web research service: ${error instanceof Error ? error.message : String(error)}`,
