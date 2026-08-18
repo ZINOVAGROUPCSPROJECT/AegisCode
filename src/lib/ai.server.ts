@@ -42,8 +42,8 @@ export interface AegisRequest {
  * Default model served by the Lovable AI Gateway. The gateway keeps the
  * credential server-side; the browser never sees a provider key.
  */
-export const AEGIS_MODEL = "google/gemini-3.6-flash";
-export const AEGIS_FALLBACK_MODEL = "openai/gpt-oss-20b:free";
+export const AEGIS_MODEL = "openai/gpt-oss-20b:free";
+export const AEGIS_FALLBACK_MODEL = "google/gemini-3.6-flash";
 
 const LOVABLE_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const OPENROUTER_GATEWAY_URL = "https://openrouter.ai/api/v1/chat/completions";
