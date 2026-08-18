@@ -456,7 +456,7 @@ export interface AegisEnvelope {
   usage: unknown;
 }
 
-interface GatewayTarget {
+interface ProviderTarget {
   url: string;
   headers: Record<string, string>;
   model: string;
@@ -464,52 +464,29 @@ interface GatewayTarget {
 }
 
 /**
- * Resolve the provider chain. The managed Lovable AI Gateway is primary: its
- * key is injected server-side, which removes the 401s caused by a missing or
- * browser-exposed provider key. An OpenRouter key, when present, is used as a
- * fallback so self-hosted deployments keep working.
-  */
-function resolveGatewayTargets(): GatewayTarget[] {
+ * OpenRouter-only provider chain: a primary model plus a fallback model, both
+ * configurable via server-side env vars. The key never leaves the server.
+ */
+function resolveProviderTargets(): ProviderTarget[] {
   const openRouterKey = process.env["OPENROUTER_API_KEY"];
-
-  if (!openRouterKey) {
-    return [];
-  }
+  if (!openRouterKey) return [];
 
   const headers = {
     Authorization: `Bearer ${openRouterKey}`,
     "Content-Type": "application/json",
-    "HTTP-Referer": "https://aegiscodecybersecurity.vercel.app",
+    "HTTP-Referer": "https://aegiscode.app",
     "X-Title": "AegisCode",
   };
 
-  return [
-    {
-      name: "openrouter-primary",
-      url: OPENROUTER_GATEWAY_URL,
-      model: AEGIS_MODEL,
-      headers,
-    },
-    {
-      name: "openrouter-fallback",
-      url: OPENROUTER_GATEWAY_URL,
-      model: AEGIS_FALLBACK_MODEL,
-      headers,
-    },
-  ];
-}
-  if (openRouterKey) {
-    targets.push({
-      name: "openrouter",
-      url: OPENROUTER_GATEWAY_URL,
-      model: AEGIS_FALLBACK_MODEL,
-      headers: {
-        Authorization: `Bearer ${openRouterKey}`,
-        "Content-Type": "application/json",
-      },
-    });
-  }
+  const primary = process.env["OPENROUTER_MODEL"] || DEFAULT_MODEL;
+  const fallback = process.env["OPENROUTER_FALLBACK_MODEL"] || DEFAULT_FALLBACK_MODEL;
 
+  const targets: ProviderTarget[] = [
+    { name: "openrouter-primary", url: OPENROUTER_URL, model: primary, headers },
+  ];
+  if (fallback && fallback !== primary) {
+    targets.push({ name: "openrouter-fallback", url: OPENROUTER_URL, model: fallback, headers });
+  }
   return targets;
 }
 
