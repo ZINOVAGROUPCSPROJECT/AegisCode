@@ -39,12 +39,12 @@ export interface AegisRequest {
 }
 
 /**
- * Default model served by the Lovable AI Gateway. The gateway keeps the
- * credential server-side; the browser never sees a provider key.
+ * OpenRouter is the only AI provider. Both models are configurable through
+ * server-side environment variables; the browser never sees a provider key.
  */
-export const AEGIS_MODEL = "google/gemini-3.6-flash";
-export const AEGIS_FALLBACK_MODEL = "openai/gpt-oss-20b:free";
-const OPENROUTER_GATEWAY_URL = "https://openrouter.ai/api/v1/chat/completions";
+export const DEFAULT_MODEL = "google/gemini-2.0-flash-001";
+export const DEFAULT_FALLBACK_MODEL = "openai/gpt-oss-20b:free";
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export const SYSTEM_PROMPTS: Record<AegisAction, string> = {
   analyze_code: `You are AegisCode, an elite application security analyst. Analyze code for vulnerabilities with surgical precision.
