@@ -544,11 +544,25 @@ async function readJsonResponse(response: Response): Promise<Record<string, unkn
   }
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Retry-After (seconds or HTTP date) in ms, capped. */
+function retryAfterMs(header: string | null): number | null {
+  if (!header) return null;
+  const seconds = Number(header);
+  if (Number.isFinite(seconds)) return Math.min(Math.max(seconds, 1), 30) * 1000;
+  const date = Date.parse(header);
+  if (!Number.isNaN(date)) return Math.min(Math.max(date - Date.now(), 1000), 30_000);
+  return null;
+}
+
+const MAX_ATTEMPTS_PER_MODEL = 3;
+
 export async function runAegisAI(body: AegisRequest): Promise<AegisEnvelope> {
-  const targets = resolveGatewayTargets();
+  const targets = resolveProviderTargets();
   if (targets.length === 0) {
     throw new AegisAIError(
-      "AI is not configured on this server. Set LOVABLE_API_KEY (or OPENROUTER_API_KEY) in the server environment.",
+      "AI is not configured on this server. Set OPENROUTER_API_KEY in the server environment.",
       500,
     );
   }
@@ -581,81 +595,67 @@ export async function runAegisAI(body: AegisRequest): Promise<AegisEnvelope> {
         choices?: { message?: { content?: string }; finish_reason?: string }[];
       }
     | undefined;
-  let usedModel = AEGIS_MODEL;
+  let usedModel = targets[0]!.model;
 
-  for (const target of targets) {
-    let response: Response;
-    try {
-      response = await fetch(target.url, {
-        method: "POST",
-        headers: target.headers,
-        body: JSON.stringify({
-          model: target.model,
-          messages,
-          temperature: body.temperature ?? 0.1,
-          max_tokens: body.maxTokens ?? 9000,
-          // Every action except free-form chat must return a strict JSON document.
-          ...(body.action === "chat" ? {} : { response_format: { type: "json_object" } }),
-        }),
-      });
-    } catch (networkError) {
-      lastError = new AegisAIError(
-        `Could not reach the AI provider (${target.name}): ${(networkError as Error).message}`,
-        503,
-        true,
-      );
-      continue;
+  const payload = JSON.stringify({
+    messages,
+    temperature: body.temperature ?? 0.1,
+    max_tokens: body.maxTokens ?? 9000,
+    // Every action except free-form chat must return a strict JSON document.
+    ...(body.action === "chat" ? {} : { response_format: { type: "json_object" } }),
+  });
+
+  outer: for (const target of targets) {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS_PER_MODEL; attempt += 1) {
+      let response: Response;
+      try {
+        response = await fetch(target.url, {
+          method: "POST",
+          headers: target.headers,
+          body: `{"model":${JSON.stringify(target.model)},${payload.slice(1)}`,
+        });
+      } catch (networkError) {
+        lastError = new AegisAIError(
+          `Could not reach the AI provider (${target.name}): ${(networkError as Error).message}`,
+          503,
+          true,
+        );
+        break; // network failure — move to the fallback model
+      }
+
+      if (response.ok) {
+        data = (await readJsonResponse(response)) as typeof data;
+        usedModel = target.model;
+        break outer;
+      }
+
+      const responseText = await response.text();
+      lastError = describeGatewayFailure(response.status, responseText);
+
+      // Rate limited: honour Retry-After, otherwise exponential backoff + jitter.
+      if (response.status === 429) {
+        if (attempt === MAX_ATTEMPTS_PER_MODEL) break; // hand over to the fallback model
+        const backoff = retryAfterMs(response.headers.get("retry-after")) ?? 2 ** attempt * 500;
+        await sleep(Math.min(backoff, 30_000) + Math.random() * 400);
+        continue;
+      }
+
+      // Transient upstream failure: one bounded retry, then the fallback model.
+      if (response.status >= 500) {
+        if (attempt === MAX_ATTEMPTS_PER_MODEL) break;
+        await sleep(2 ** attempt * 400 + Math.random() * 300);
+        continue;
+      }
+
+      // Terminal: credits / auth / bad request. Retrying the same key never helps.
+      if (response.status === 402 || response.status === 401 || response.status === 403) {
+        throw lastError;
+      }
+
+      break; // other 4xx — try the fallback model once
     }
-
-    if (!response.ok) {
-  const responseText = await response.text();
-
-  lastError = describeGatewayFailure(
-    response.status,
-    responseText
-  );
-
-  // OpenRouter rate limit:
-  // wait briefly and then try the next configured OpenRouter model.
-  if (response.status === 429) {
-    const retryAfterHeader =
-      response.headers.get("retry-after");
-
-    const retryAfterSeconds = Number(
-      retryAfterHeader || "2"
-    );
-
-    const waitMs =
-      Math.min(
-        Math.max(
-          Number.isFinite(retryAfterSeconds)
-            ? retryAfterSeconds
-            : 2,
-          1
-        ),
-        10
-      ) * 1000;
-
-    await new Promise((resolve) =>
-      setTimeout(resolve, waitMs + Math.random() * 500)
-    );
-
-    continue;
   }
 
-  // Credits exhausted cannot be fixed by retrying.
-  if (response.status === 402) {
-    throw lastError;
-  }
-
-  continue;
-}
-    }
-
-    data = (await readJsonResponse(response)) as typeof data;
-    usedModel = target.model;
-    break;
-  }
 
   if (!data) {
     throw lastError ?? new AegisAIError("The AI request failed.", 502, true);
