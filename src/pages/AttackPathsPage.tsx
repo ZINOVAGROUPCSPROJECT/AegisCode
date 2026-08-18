@@ -145,8 +145,8 @@ export function AttackPathsPage({ onNavigate }: { onNavigate: (p: PageId) => voi
       if (!isRetest) setResult(null);
       setRetestedAt(null);
       try {
-       const res = await ai.generateAttackPaths(
-  subset,
+      const res = await ai.generateAttackPaths(
+  subset as unknown as Record<string, unknown>[],
   appContext || "No additional context. Reconstruct attack paths from the findings.",
         );
         setResult(res);
