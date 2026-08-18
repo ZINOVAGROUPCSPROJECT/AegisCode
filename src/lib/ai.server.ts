@@ -42,7 +42,10 @@ export interface AegisRequest {
  * Default model served by the Lovable AI Gateway. The gateway keeps the
  * credential server-side; the browser never sees a provider key.
  */
-export const AEGIS_MODEL = "openai/gpt-oss-20b:free";
+export const AEGIS_MODEL = "google/gemini-3.6-flash";
+export const AEGIS_FALLBACK_MODEL = "openai/gpt-oss-20b:free";
+
+const LOVABLE_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const OPENROUTER_GATEWAY_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export const SYSTEM_PROMPTS: Record<AegisAction, string> = {
@@ -423,7 +426,20 @@ interface GatewayTarget {
  */
 function resolveGatewayTargets(): GatewayTarget[] {
   const targets: GatewayTarget[] = [];
+  const lovableKey = process.env["LOVABLE_API_KEY"];
   const openRouterKey = process.env["OPENROUTER_API_KEY"];
+
+  if (lovableKey) {
+    targets.push({
+      name: "lovable",
+      url: LOVABLE_GATEWAY_URL,
+      model: AEGIS_MODEL,
+      headers: {
+        "Lovable-API-Key": lovableKey,
+        "Content-Type": "application/json",
+      },
+    });
+  }
 
   if (openRouterKey) {
     targets.push({
@@ -498,7 +514,7 @@ export async function runAegisAI(body: AegisRequest): Promise<AegisEnvelope> {
   const targets = resolveGatewayTargets();
   if (targets.length === 0) {
     throw new AegisAIError(
-      "AI is not configured on this server. Set OPENROUTER_API_KEY in the server environment.",
+      "AI is not configured on this server. Set LOVABLE_API_KEY (or OPENROUTER_API_KEY) in the server environment.",
       500,
     );
   }
@@ -560,17 +576,7 @@ export async function runAegisAI(body: AegisRequest): Promise<AegisEnvelope> {
     if (!response.ok) {
       lastError = describeGatewayFailure(response.status, await response.text());
       // Auth/config failures on one provider are worth retrying on the next.
-      if (
-  lastError.status === 401 ||
-  lastError.status === 403 ||
-  lastError.status === 402 ||
-  lastError.status === 429 ||
-  lastError.status >= 500
-) {
-  continue;
-}
-
-throw lastError;
+      if (lastError.status === 429 || lastError.status === 402) throw lastError;
       continue;
     }
 
