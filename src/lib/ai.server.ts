@@ -576,7 +576,17 @@ export async function runAegisAI(body: AegisRequest): Promise<AegisEnvelope> {
     if (!response.ok) {
       lastError = describeGatewayFailure(response.status, await response.text());
       // Auth/config failures on one provider are worth retrying on the next.
-      if (lastError.status === 429 || lastError.status === 402) throw lastError;
+      if (
+  lastError.status === 401 ||
+  lastError.status === 403 ||
+  lastError.status === 402 ||
+  lastError.status === 429 ||
+  lastError.status >= 500
+) {
+  continue;
+}
+
+throw lastError;
       continue;
     }
 
