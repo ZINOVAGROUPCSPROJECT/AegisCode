@@ -18,6 +18,10 @@ import type {
 
 import type { AegisActionName } from "./ai.contract";
 
+/** Hard caps keep Attack-Path requests fast and token-efficient. */
+export const MAX_ATTACK_PATH_FINDINGS = 50;
+export const MAX_ATTACK_PATH_CONTEXT = 8000;
+
 export class AIRequestError extends Error {
   readonly status: number;
   readonly retryable: boolean;
