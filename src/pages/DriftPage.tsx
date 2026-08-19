@@ -12,6 +12,7 @@ import {
   ClassificationTag,
   StatCard,
 } from "@/components/ui-kit";
+import { SaveAnalysisButton } from "@/components/SaveAnalysisButton";
 import { classNames, timeAgo, sha256 } from "@/lib/utils";
 
 export function DriftPage() {
@@ -97,6 +98,7 @@ export function DriftPage() {
         title="Security Drift Detection"
         subtitle="Detect security-relevant changes in dependencies, code, configuration, artifacts, and behavior between two states."
         icon={<GitCompareArrows className="h-6 w-6" />}
+        actions={<SaveAnalysisButton kind="drift" data={result} />}
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

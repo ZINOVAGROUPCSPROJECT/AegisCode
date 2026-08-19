@@ -14,6 +14,7 @@ import {
   StatCard,
   LedDot,
 } from "@/components/ui-kit";
+import { SaveAnalysisButton } from "@/components/SaveAnalysisButton";
 import { classNames } from "@/lib/utils";
 
 const SAMPLE_EVIDENCE = `GET /api/profile?id=1042 HTTP/1.1
@@ -104,6 +105,7 @@ export function DastPage() {
         title="DAST / Runtime Testing"
         subtitle="Probe the running application and confirm — with runtime evidence — which vulnerabilities are real."
         icon={<Radio className="h-6 w-6" />}
+        actions={<SaveAnalysisButton kind="dast" data={result} />}
       />
 
       <div className="grid gap-6 lg:grid-cols-5">

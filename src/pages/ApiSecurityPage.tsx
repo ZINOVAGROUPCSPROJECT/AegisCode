@@ -13,6 +13,7 @@ import {
   EmptyState,
   StatCard,
 } from "@/components/ui-kit";
+import { SaveAnalysisButton } from "@/components/SaveAnalysisButton";
 import { classNames, sha256, countLines } from "@/lib/utils";
 
 const SAMPLE = `// Express API routes
@@ -153,6 +154,7 @@ export function ApiSecurityPage() {
         title="API Security"
         subtitle="Discover every endpoint, then test for broken auth, IDOR, injection, SSRF, mass assignment and data exposure."
         icon={<Plug className="h-6 w-6" />}
+        actions={<SaveAnalysisButton kind="api-security" data={result} />}
       />
 
       <div className="grid gap-6 lg:grid-cols-5">

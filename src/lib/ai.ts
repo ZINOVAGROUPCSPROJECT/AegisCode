@@ -145,7 +145,7 @@ function normalizeStep(step: unknown, index: number): AttackPathStep {
   };
   if (typeof raw["node_type"] === "string") normalized.node_type = raw["node_type"] as string;
   if (typeof raw["classification"] === "string") {
-    normalized.classification = raw["classification"] as AttackPathStep["classification"];
+    normalized.classification = raw["classification"] as NonNullable<AttackPathStep["classification"]>;
   }
   if (typeof raw["evidence"] === "string") normalized.evidence = raw["evidence"] as string;
   if (mitreRaw && typeof mitreRaw === "object" && typeof mitreRaw["id"] === "string") {
