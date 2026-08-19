@@ -12,6 +12,7 @@ import {
   EmptyState,
   StatCard,
 } from "@/components/ui-kit";
+import { SaveAnalysisButton } from "@/components/SaveAnalysisButton";
 import { classNames, sha256, countLines } from "@/lib/utils";
 
 const SAMPLE = `# .env.production
@@ -142,6 +143,7 @@ export function SecretsPage() {
         title="Secret Detection"
         subtitle="Detect exposed API keys, tokens, passwords, private keys and connection strings — values are always masked."
         icon={<KeyRound className="h-6 w-6" />}
+        actions={<SaveAnalysisButton kind="secrets" data={result} />}
       />
 
       <div className="grid gap-6 lg:grid-cols-5">

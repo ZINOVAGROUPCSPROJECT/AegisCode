@@ -25,6 +25,7 @@ import {
   Toggle,
   CodeBlock,
 } from "@/components/ui-kit";
+import { SaveAnalysisButton } from "@/components/SaveAnalysisButton";
 import { classNames } from "@/lib/utils";
 
 const SAMPLE_DIFF = `diff --git a/src/routes/report.ts b/src/routes/report.ts
@@ -184,6 +185,7 @@ Block when a secret is introduced: ${active.block_on_secrets ? "yes" : "no"}.`
         title="CI/CD — GitHub & GitLab"
         subtitle="Scan pull requests and block deployments when dangerous vulnerabilities appear."
         icon={<GitBranch className="h-6 w-6" />}
+        actions={<SaveAnalysisButton kind="ci-cd" data={result} />}
       />
 
       <div className="grid gap-6 lg:grid-cols-5">

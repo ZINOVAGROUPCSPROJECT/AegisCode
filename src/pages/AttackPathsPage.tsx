@@ -14,6 +14,7 @@ import { supabase } from "@/lib/db";
 import { ai, MAX_ATTACK_PATH_FINDINGS } from "@/lib/ai";
 import type { Finding, AIAttackPathsResult, AttackPath, AttackPathStep } from "@/lib/types";
 import { Panel, PageHeader, Button, EmptyState, SeverityBadge } from "@/components/ui-kit";
+import { SaveAnalysisButton } from "@/components/SaveAnalysisButton";
 import { classNames } from "@/lib/utils";
 import type { PageId } from "@/components/AppShell";
 
@@ -202,9 +203,12 @@ export function AttackPathsPage({ onNavigate }: { onNavigate: (p: PageId) => voi
         subtitle="Reconstruct entry point → vulnerability → attack step → impact chains, ranked by realistic risk."
         icon={<Network className="h-6 w-6" />}
         actions={
+          <div className="flex items-center gap-2">
+            <SaveAnalysisButton kind="attack-paths" data={result} />
           <Button size="sm" variant="ghost" onClick={() => onNavigate("analyze")}>
             New Analysis
           </Button>
+          </div>
         }
       />
 

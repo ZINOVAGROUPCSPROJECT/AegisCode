@@ -12,6 +12,7 @@ import {
   StatCard,
   ClassificationTag,
 } from "@/components/ui-kit";
+import { SaveAnalysisButton } from "@/components/SaveAnalysisButton";
 import { classNames, sha256, countLines } from "@/lib/utils";
 
 const SAMPLE_MANIFEST = `{
@@ -111,6 +112,7 @@ export function SupplyChainPage() {
         title="Supply-Chain Security"
         subtitle="SBOM generation, dependency risk, poisoning indicators, behavioral fingerprinting, and blast radius analysis."
         icon={<Package className="h-6 w-6" />}
+        actions={<SaveAnalysisButton kind="supply-chain" data={result} />}
       />
 
       <div className="grid gap-6 lg:grid-cols-5">

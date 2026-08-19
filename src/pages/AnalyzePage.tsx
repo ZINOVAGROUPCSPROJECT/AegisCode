@@ -28,6 +28,7 @@ import {
   EmptyState,
   PageHeader,
 } from "@/components/ui-kit";
+import { SaveAnalysisButton } from "@/components/SaveAnalysisButton";
 import { classNames, sha256, countLines, severityRank } from "@/lib/utils";
 import type { PageId } from "@/components/AppShell";
 
@@ -176,6 +177,7 @@ export function AnalyzePage({ onNavigate }: { onNavigate: (p: PageId) => void })
         title="AI Code Security Analyzer"
         subtitle="Upload or paste code — get vulnerability detection with CWE, evidence, exploitability verdict, and secure fixes."
         icon={<ScanSearch className="h-6 w-6" />}
+        actions={<SaveAnalysisButton kind="code-analysis" data={result} />}
       />
 
       <div className="grid gap-6 lg:grid-cols-5">

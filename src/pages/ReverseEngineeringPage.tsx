@@ -12,6 +12,7 @@ import {
   ClassificationTag,
   RiskBadge,
 } from "@/components/ui-kit";
+import { SaveAnalysisButton } from "@/components/SaveAnalysisButton";
 import { classNames, sha256 } from "@/lib/utils";
 
 const SAMPLE_BINARY = `Binary: auth-service
@@ -121,6 +122,7 @@ export function ReverseEngineeringPage() {
         title="Reverse Engineering"
         subtitle="Analyze binaries with strings, imports, functions, behavior, suspicious APIs, and source→build→binary→runtime integrity mismatches."
         icon={<Cpu className="h-6 w-6" />}
+        actions={<SaveAnalysisButton kind="reverse-engineering" data={result} />}
       />
 
       <div className="grid gap-6 lg:grid-cols-5">
