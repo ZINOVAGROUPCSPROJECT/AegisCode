@@ -28,7 +28,13 @@ export function SaveAnalysisButton({
     setState("saving");
     setError(null);
     try {
-      await saveAnalysisReport({ kind, data, title, scanIds, summary });
+      await saveAnalysisReport({
+        kind,
+        data,
+        ...(title ? { title } : {}),
+        ...(scanIds ? { scanIds } : {}),
+        ...(summary ? { summary } : {}),
+      });
       setState("saved");
       window.setTimeout(() => setState("idle"), 2500);
     } catch (err) {
