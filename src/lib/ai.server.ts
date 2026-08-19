@@ -42,8 +42,8 @@ export interface AegisRequest {
  * OpenRouter is the only AI provider. Both models are configurable through
  * server-side environment variables; the browser never sees a provider key.
  */
-export const DEFAULT_MODEL = "google/gemma-4-26b-a4b-it:free";
-export const DEFAULT_FALLBACK_MODEL = "openai/gpt-oss-20b:free";
+export const DEFAULT_MODEL = "cohere/north-mini-code:free";
+export const DEFAULT_FALLBACK_MODEL = "nvidia/nemotron-nano-9b-v2:free";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export const SYSTEM_PROMPTS: Record<AegisAction, string> = {
