@@ -97,10 +97,49 @@ export function ReportsPage() {
   const downloadReport = (report: Report) => {
     setDownloadError(null);
     try {
-      const payload =
-        report.content ?? { title: report.title, summary: report.summary, id: report.id };
+      const rawContent = report.content as unknown;
+      const hasContent =
+        rawContent != null &&
+        !(typeof rawContent === "object" && Object.keys(rawContent as object).length === 0);
+
+      // Older reports (or ones saved before content was captured) can have an
+      // empty content payload — rebuild it from the linked scans/findings so
+      // every report in the list stays downloadable.
+      const scanIds = Array.isArray(report.scan_ids) ? (report.scan_ids as string[]) : [];
+      const fallbackContent = {
+        scans: scans.filter((s) => scanIds.includes(s.id)),
+        findings: findings
+          .filter((f) => scanIds.includes(f.scan_id))
+          .map((f) => ({
+            title: f.title,
+            severity: f.severity,
+            cwe: f.cwe,
+            cvss: f.cvss_score,
+            exploitability: f.exploitability,
+            status: f.status,
+            location: f.location,
+          })),
+      };
+
+      const payload = {
+        id: report.id,
+        title: report.title,
+        generated_at: report.created_at,
+        exported_at: new Date().toISOString(),
+        scan_ids: scanIds,
+        summary: report.summary ?? {},
+        content: hasContent ? rawContent : fallbackContent,
+      };
+
+      const slug =
+        (report.title || "report")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 48) || "report";
+
       downloadFile(
-        `aegiscode-report-${report.id.slice(0, 8)}.json`,
+        `aegiscode-${slug}-${report.id.slice(0, 8)}.json`,
         safeJsonStringify(payload)
       );
     } catch (err) {
