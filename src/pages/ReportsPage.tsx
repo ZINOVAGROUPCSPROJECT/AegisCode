@@ -230,9 +230,18 @@ export function ReportsPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-ink-100">{report.title}</p>
                     <p className="text-xs text-ink-500 mt-0.5">
-                      {(report.summary as Record<string, number>)?.["scans"] ?? 0} scans ·
-                      {" "}{(report.summary as Record<string, number>)?.["findings"] ?? 0} findings ·
-                      {" "}{timeAgo(report.created_at)}
+                      {[
+                        (report.summary as Record<string, unknown>)?.["label"] as string | undefined,
+                        Number((report.summary as Record<string, number>)?.["scans"]) > 0
+                          ? `${(report.summary as Record<string, number>)["scans"]} scans`
+                          : null,
+                        Number((report.summary as Record<string, number>)?.["findings"]) > 0
+                          ? `${(report.summary as Record<string, number>)["findings"]} findings`
+                          : null,
+                        timeAgo(report.created_at),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
