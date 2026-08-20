@@ -11,7 +11,7 @@ import {
   ExploitabilityBadge,
   StatCard,
 } from "@/components/ui-kit";
-import { classNames, timeAgo, downloadFile, formatDate } from "@/lib/utils";
+import { classNames, timeAgo, downloadFile, formatDate, safeJsonStringify } from "@/lib/utils";
 
 export function ReportsPage() {
   const [scans, setScans] = useState<Scan[]>([]);
@@ -21,6 +21,7 @@ export function ReportsPage() {
   const [selectedScans, setSelectedScans] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
   const [reportTitle, setReportTitle] = useState("");
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -86,10 +87,7 @@ export function ReportsPage() {
         setReports((prev) => [data as Report, ...prev]);
         setSelectedScans(new Set());
         setReportTitle("");
-        downloadFile(
-          `aegiscode-report-${data.id.slice(0, 8)}.json`,
-          JSON.stringify(content, null, 2)
-        );
+        downloadFile(`aegiscode-report-${data.id.slice(0, 8)}.json`, safeJsonStringify(content));
       }
     } finally {
       setGenerating(false);
@@ -97,7 +95,17 @@ export function ReportsPage() {
   };
 
   const downloadReport = (report: Report) => {
-    downloadFile(`aegiscode-report-${report.id.slice(0, 8)}.json`, JSON.stringify(report.content, null, 2));
+    setDownloadError(null);
+    try {
+      const payload =
+        report.content ?? { title: report.title, summary: report.summary, id: report.id };
+      downloadFile(
+        `aegiscode-report-${report.id.slice(0, 8)}.json`,
+        safeJsonStringify(payload)
+      );
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : "Download failed");
+    }
   };
 
   const deleteReport = async (id: string) => {
@@ -203,6 +211,9 @@ export function ReportsPage() {
 
       <div>
         <h3 className="mb-3 text-sm font-semibold text-ink-100">Saved Reports</h3>
+        {downloadError && (
+          <p className="mb-2 text-xs text-danger">Download failed: {downloadError}</p>
+        )}
         {reports.length === 0 ? (
           <Panel className="p-8">
             <EmptyState
@@ -219,9 +230,18 @@ export function ReportsPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-ink-100">{report.title}</p>
                     <p className="text-xs text-ink-500 mt-0.5">
-                      {(report.summary as Record<string, number>)?.["scans"] ?? 0} scans ·
-                      {" "}{(report.summary as Record<string, number>)?.["findings"] ?? 0} findings ·
-                      {" "}{timeAgo(report.created_at)}
+                      {[
+                        (report.summary as Record<string, unknown>)?.["label"] as string | undefined,
+                        Number((report.summary as Record<string, number>)?.["scans"]) > 0
+                          ? `${(report.summary as Record<string, number>)["scans"]} scans`
+                          : null,
+                        Number((report.summary as Record<string, number>)?.["findings"]) > 0
+                          ? `${(report.summary as Record<string, number>)["findings"]} findings`
+                          : null,
+                        timeAgo(report.created_at),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

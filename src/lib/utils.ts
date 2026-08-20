@@ -149,13 +149,39 @@ export function countLines(code: string): number {
 }
 
 export function downloadFile(filename: string, content: string, type = "application/json"): void {
+  if (typeof document === "undefined") return;
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
+  a.rel = "noopener";
+  a.style.display = "none";
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  // Keep the object URL alive until the browser has started the download,
+  // otherwise a second download in the same session can silently fail.
+  window.setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 5000);
+}
+
+/** JSON.stringify that never throws on circular refs or BigInt values. */
+export function safeJsonStringify(value: unknown, space = 2): string {
+  const seen = new WeakSet<object>();
+  return JSON.stringify(
+    value,
+    (_key, val) => {
+      if (typeof val === "bigint") return val.toString();
+      if (typeof val === "object" && val !== null) {
+        if (seen.has(val as object)) return "[Circular]";
+        seen.add(val as object);
+      }
+      return val;
+    },
+    space
+  ) ?? "null";
 }
 
 export function copyToClipboard(text: string): Promise<void> {
