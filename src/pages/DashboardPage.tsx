@@ -9,10 +9,6 @@ import {
   ChevronRight,
   Cpu,
   Globe,
-  Target,
-  Trophy,
-  FlaskConical,
-  CheckCircle2,
   XCircle,
 } from "lucide-react";
 import { supabase } from "@/lib/db";
@@ -241,107 +237,6 @@ export function DashboardPage({ onNavigate }: { onNavigate: (p: PageId) => void 
         )}
       </Panel>
 
-      {/* Accuracy & Benchmark Metrics */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        {/* Exploitability Accuracy */}
-        <Panel className="p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <Target className="h-5 w-5 text-volt-400" />
-            <h3 className="text-sm font-semibold text-ink-100">Exploitability Accuracy</h3>
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="text-3xl font-bold text-volt-300">94.2<span className="text-lg text-volt-500">%</span></p>
-                <p className="text-xs text-ink-500">Precision across validated exploits</p>
-              </div>
-              <div className="flex flex-col items-end gap-1">
-                <span className="chip border border-volt-500/25 bg-volt-500/10 text-volt-300">
-                  <CheckCircle2 className="h-3 w-3" /> Verified
-                </span>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <MetricBar label="True Exploitable" value={94} color="bg-volt-500" />
-              <MetricBar label="True Not-Exploitable" value={91} color="bg-cyber-500" />
-              <MetricBar label="False Positives" value={6} color="bg-warning" />
-              <MetricBar label="False Negatives" value={4} color="bg-danger" />
-            </div>
-            <p className="text-xs text-ink-500">
-              Measured against 248 confirmed vulnerabilities across 12 real-world applications. AegisCode correctly identified 234 of 248 exploitability verdicts.
-            </p>
-          </div>
-        </Panel>
-
-        {/* Benchmark Superiority */}
-        <Panel className="p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-cyber-400" />
-            <h3 className="text-sm font-semibold text-ink-100">Benchmark Superiority</h3>
-          </div>
-          <div className="space-y-3">
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-lg border border-ink-700/40 bg-ink-850/50 p-3 text-center">
-                <p className="text-2xl font-bold text-ink-200">1,200</p>
-                <p className="mt-0.5 text-xs text-ink-500">Raw findings</p>
-                <p className="mt-1 text-[10px] text-ink-600">Traditional tools</p>
-              </div>
-              <div className="rounded-lg border border-cyber-500/30 bg-cyber-500/10 p-3 text-center">
-                <p className="text-2xl font-bold text-cyber-300">34</p>
-                <p className="mt-0.5 text-xs text-ink-400">Actionable</p>
-                <p className="mt-1 text-[10px] text-cyber-400">AegisCode</p>
-              </div>
-              <div className="rounded-lg border border-volt-500/30 bg-volt-500/10 p-3 text-center">
-                <p className="text-2xl font-bold text-volt-300">97<span className="text-sm">%</span></p>
-                <p className="mt-0.5 text-xs text-ink-400">Reduction</p>
-                <p className="mt-1 text-[10px] text-volt-400">Noise eliminated</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <ComparisonRow label="Static analyzers" traditional="1,200" aegis="34" />
-              <ComparisonRow label="SAST + DAST avg" traditional="847" aegis="34" />
-              <ComparisonRow label="SCA tools" traditional="312" aegis="12" />
-            </div>
-            <p className="text-xs text-ink-500">
-              AegisCode reduces 1,200 raw findings to 34 truly actionable vulnerabilities — a 97% reduction in unnecessary investigation.
-            </p>
-          </div>
-        </Panel>
-
-        {/* Real-World Validation */}
-        <Panel className="p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <FlaskConical className="h-5 w-5 text-cyber-400" />
-            <h3 className="text-sm font-semibold text-ink-100">Real-World Validation</h3>
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="text-3xl font-bold text-cyber-300">12</p>
-                <p className="text-xs text-ink-500">Applications tested</p>
-              </div>
-              <div>
-                <p className="text-3xl font-bold text-cyber-300">248</p>
-                <p className="text-xs text-ink-500">Vulnerabilities verified</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <ValidationRow app="DVWA" lang="PHP" findings={18} verified={17} />
-              <ValidationRow app="WebGoat" lang="Java" findings={31} verified={29} />
-              <ValidationRow app="Juice Shop" lang="TS" findings={44} verified={41} />
-              <ValidationRow app="VAmPI" lang="Python" findings={15} verified={15} />
-              <ValidationRow app="Rails GoAT" lang="Ruby" findings={22} verified={20} />
-            </div>
-            <div className="flex items-center gap-2 rounded-lg border border-volt-500/25 bg-volt-500/10 p-2.5">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-volt-400" />
-              <p className="text-xs text-volt-300">
-                <span className="font-semibold">91.1%</span> of AegisCode's exploitability verdicts confirmed correct by manual penetration testing.
-              </p>
-            </div>
-          </div>
-        </Panel>
-      </div>
-
       {/* Quick actions */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
@@ -361,49 +256,6 @@ export function DashboardPage({ onNavigate }: { onNavigate: (p: PageId) => void 
             <p className="mt-0.5 text-xs text-ink-400">{a.desc}</p>
           </Panel>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function MetricBar({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div>
-      <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="text-ink-400">{label}</span>
-        <span className="font-mono text-ink-300">{value}%</span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-ink-800">
-        <div className={`h-full rounded-full ${color} transition-all duration-500`} style={{ width: `${value}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function ComparisonRow({ label, traditional, aegis }: { label: string; traditional: string; aegis: string }) {
-  return (
-    <div className="flex items-center justify-between rounded-md border border-ink-700/30 bg-ink-850/30 px-3 py-2 text-xs">
-      <span className="text-ink-400">{label}</span>
-      <div className="flex items-center gap-3">
-        <span className="text-ink-500 line-through">{traditional}</span>
-        <ChevronRight className="h-3 w-3 text-ink-600" />
-        <span className="font-mono font-semibold text-cyber-300">{aegis}</span>
-      </div>
-    </div>
-  );
-}
-
-function ValidationRow({ app, lang, findings, verified }: { app: string; lang: string; findings: number; verified: number }) {
-  const pct = findings > 0 ? Math.round((verified / findings) * 100) : 0;
-  return (
-    <div className="flex items-center justify-between rounded-md border border-ink-700/30 bg-ink-850/30 px-3 py-2 text-xs">
-      <div className="flex items-center gap-2">
-        <span className="font-medium text-ink-200">{app}</span>
-        <span className="chip border border-ink-700/40 bg-ink-800/40 px-1.5 py-0 text-[10px] text-ink-500">{lang}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-ink-500">{verified}/{findings}</span>
-        <span className="font-mono font-semibold text-volt-300">{pct}%</span>
       </div>
     </div>
   );
