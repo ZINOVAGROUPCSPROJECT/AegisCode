@@ -9,10 +9,6 @@ import {
   ChevronRight,
   Cpu,
   Globe,
-  Target,
-  Trophy,
-  FlaskConical,
-  CheckCircle2,
   XCircle,
 } from "lucide-react";
 import { supabase } from "@/lib/db";
@@ -260,49 +256,6 @@ export function DashboardPage({ onNavigate }: { onNavigate: (p: PageId) => void 
             <p className="mt-0.5 text-xs text-ink-400">{a.desc}</p>
           </Panel>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function MetricBar({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div>
-      <div className="mb-1 flex items-center justify-between text-xs">
-        <span className="text-ink-400">{label}</span>
-        <span className="font-mono text-ink-300">{value}%</span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-ink-800">
-        <div className={`h-full rounded-full ${color} transition-all duration-500`} style={{ width: `${value}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function ComparisonRow({ label, traditional, aegis }: { label: string; traditional: string; aegis: string }) {
-  return (
-    <div className="flex items-center justify-between rounded-md border border-ink-700/30 bg-ink-850/30 px-3 py-2 text-xs">
-      <span className="text-ink-400">{label}</span>
-      <div className="flex items-center gap-3">
-        <span className="text-ink-500 line-through">{traditional}</span>
-        <ChevronRight className="h-3 w-3 text-ink-600" />
-        <span className="font-mono font-semibold text-cyber-300">{aegis}</span>
-      </div>
-    </div>
-  );
-}
-
-function ValidationRow({ app, lang, findings, verified }: { app: string; lang: string; findings: number; verified: number }) {
-  const pct = findings > 0 ? Math.round((verified / findings) * 100) : 0;
-  return (
-    <div className="flex items-center justify-between rounded-md border border-ink-700/30 bg-ink-850/30 px-3 py-2 text-xs">
-      <div className="flex items-center gap-2">
-        <span className="font-medium text-ink-200">{app}</span>
-        <span className="chip border border-ink-700/40 bg-ink-800/40 px-1.5 py-0 text-[10px] text-ink-500">{lang}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-ink-500">{verified}/{findings}</span>
-        <span className="font-mono font-semibold text-volt-300">{pct}%</span>
       </div>
     </div>
   );
